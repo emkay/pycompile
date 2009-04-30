@@ -3,6 +3,7 @@ class Compiler:
 	def __init__(self):
 		self.string_constants = {}
 		self.seq = 0
+		self.PTR_SIZE = 4
 
 	def get_arg(self, a):
 		if a in self.string_constants:
@@ -20,13 +21,19 @@ class Compiler:
 	
 	def compile_exp(self, exp):
 		call = str(exp[0])
-		temp_args = exp[1:]
-		args = map(self.get_arg, temp_args)
-		print("\tsubl\t$4,%esp")
+		args = map(self.get_arg, exp[1:])
+		stack_adjustment = self.PTR_SIZE + int(round((len(args)+0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
+		print("\tsubl\t$" + str(stack_adjustment) + ", %esp")
+		count = 0
 		for a in args:
-			print("\tmovl\t$.LC" + str(a) + ",(%esp)")
+			if count > 0:
+				i = count * self.PTR_SIZE
+			else:
+				i = ""
+			print("\tmovl\t$.LC" + str(a) + ", " + str(i) + "(%esp)")
+			count += 1
 		print("\tcall\t" + str(call))
-		print("\taddl\t$4, %esp")
+		print("\taddl\t$" + str(stack_adjustment) + ", %esp")
 
 	def compile(self, exp):
 		print("""
@@ -51,7 +58,7 @@ main:
 		""")
 		self.output_constants()
 
-prog = ['puts', "Hello World"]
+prog = ['printf', 'Hello %s\\n', "World"]
 compiler = Compiler()
 compiler.compile(prog)
 
