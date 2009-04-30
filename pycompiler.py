@@ -20,6 +20,12 @@ class Compiler:
 			print("\t.string \"" + str(c) + "\"")
 	
 	def compile_exp(self, exp):
+		if exp[0] == 'do':
+			exp.pop(0)
+			for e in exp:
+				self.compile_exp(e)
+			return True
+				
 		call = str(exp[0])
 		args = map(self.get_arg, exp[1:])
 		stack_adjustment = self.PTR_SIZE + int(round((len(args)+0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
@@ -58,7 +64,11 @@ main:
 		""")
 		self.output_constants()
 
-prog = ['printf', 'Hello %s\\n', "World"]
+prog = ['do',
+	['printf', 'Hello'],
+	['printf', ' '],
+	['printf', 'World']
+]
 compiler = Compiler()
 compiler.compile(prog)
 
