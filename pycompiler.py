@@ -12,7 +12,7 @@ class Compiler:
 		self.seq += 1
 		self.string_constants[a] = seq
 		return seq
-	
+
 	def output_constants(self):
 		print("\t.section\t.rodata")
 		for c,seq in self.string_constants.items():
@@ -22,8 +22,7 @@ class Compiler:
 	def compile_exp(self, exp):
 		if exp[0] == 'do':
 			exp.pop(0)
-			for e in exp:
-				self.compile_exp(e)
+			map(self.compile_exp, exp)
 			return True
 				
 		call = str(exp[0])
@@ -71,4 +70,3 @@ prog = ['do',
 ]
 compiler = Compiler()
 compiler.compile(prog)
-
