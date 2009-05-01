@@ -3,7 +3,9 @@ def is_list(l):
 
 class Compiler:
 	
-	def __init__(self):
+	def __init__(self, before, after):
+		self.DO_BEFORE = before
+		self.DO_AFTER = after
 		self.string_constants = {}
 		self.global_functions = {}
 		self.seq = 0
@@ -97,9 +99,7 @@ main:
 		self.output_constants()
 	
 	def compile(self, exp):
-		global DO_BEFORE
-		global DO_AFTER
-		self.compile_main(['do', DO_BEFORE, exp, DO_AFTER])
+		self.compile_main(['do', self.DO_BEFORE, exp, self.DO_AFTER])
 
 DO_BEFORE = ['do', 
 	['defun', 'hello_world', [], ['puts', "Hello World"]]
@@ -108,5 +108,5 @@ DO_AFTER = []
 
 prog = ['hello_world']
 
-compiler = Compiler()
+compiler = Compiler(DO_BEFORE, DO_AFTER)
 compiler.compile(prog)
