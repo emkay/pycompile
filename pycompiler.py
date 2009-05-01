@@ -1,3 +1,6 @@
+def is_list(l):
+	return type(l) == type([])
+
 class Compiler:
 	
 	def __init__(self):
@@ -6,12 +9,15 @@ class Compiler:
 		self.PTR_SIZE = 4
 
 	def get_arg(self, a):
+		if is_list(a):
+			self.compile_exp(a)
+			return ['subexpr', False]
 		if a in self.string_constants:
 			return self.string_constants[a]
 		seq = self.seq
 		self.seq += 1
 		self.string_constants[a] = seq
-		return seq
+		return ['strconst', seq]
 
 	def output_constants(self):
 		print("\t.section\t.rodata")
@@ -26,16 +32,24 @@ class Compiler:
 			return True
 				
 		call = str(exp[0])
-		args = map(self.get_arg, exp[1:])
-		stack_adjustment = self.PTR_SIZE + int(round((len(args)+0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
-		print("\tsubl\t$" + str(stack_adjustment) + ", %esp")
+		stack_adjustment = self.PTR_SIZE + int(round((len(exp) - 1 + 0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
+		#args = map(self.get_arg, exp[1:])
+		#stack_adjustment = self.PTR_SIZE + int(round((len(args)+0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
+		if exp[0] != 'do':
+			print("\tsubl\t$" + str(stack_adjustment) + ", %esp")
 		count = 0
-		for a in args:
+		for a in exp[1:]:
+			atype, aparam = self.get_arg(a)
+			if exp[0] != 'do':
+				if atype == 'strconst':
+					param = "$.LC" + str(aparam)
+				else:
+					param = "%eax"
 			if count > 0:
 				i = count * self.PTR_SIZE
 			else:
 				i = ""
-			print("\tmovl\t$.LC" + str(a) + ", " + str(i) + "(%esp)")
+			print("\tmovl\t" + str(param) + ", " + str(i) + "(%esp)")
 			count += 1
 		print("\tcall\t" + str(call))
 		print("\taddl\t$" + str(stack_adjustment) + ", %esp")
@@ -63,10 +77,13 @@ main:
 		""")
 		self.output_constants()
 
+"""
 prog = ['do',
 	['printf', 'Hello'],
 	['printf', ' '],
 	['printf', 'World']
 ]
+"""
+prog = ['printf',"'hello world' takes %ld bytes", ['strlen', "hello world"]]
 compiler = Compiler()
 compiler.compile(prog)
