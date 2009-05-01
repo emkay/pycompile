@@ -5,6 +5,7 @@ class Compiler:
 	
 	def __init__(self):
 		self.string_constants = {}
+		self.global_functions = {}
 		self.seq = 0
 		self.PTR_SIZE = 4
 
@@ -18,6 +19,21 @@ class Compiler:
 		self.seq += 1
 		self.string_constants[a] = seq
 		return ['strconst', seq]
+	
+	def defun(self, name, args, body):
+		self.global_functions[name] = [args, body]
+
+	def output_functions(self):
+		for name, data in self.global_functions.items():
+			print(".globl " + str(name))
+			print("\t.type\t" + str(name) + ", @function")
+			print(str(name) + ":")
+			print("\tpushl\t%ebp")
+			print("\tmovl\t%esp, %ebp")
+			self.compile_exp(data[1])
+			print("leave")
+			print("ret")
+			print("\t.size\t" + str(name) + ", .-" + str(name))
 
 	def output_constants(self):
 		print("\t.section\t.rodata")
@@ -26,6 +42,10 @@ class Compiler:
 			print("\t.string \"" + str(c) + "\"")
 	
 	def compile_exp(self, exp):
+		if not exp or len(exp) == 0:
+			return False
+		if exp[0] == 'defun':
+			return self.defun(*exp[1:])
 		if exp[0] == 'do':
 			exp.pop(0)
 			map(self.compile_exp, exp)
@@ -54,7 +74,7 @@ class Compiler:
 		print("\tcall\t" + str(call))
 		print("\taddl\t$" + str(stack_adjustment) + ", %esp")
 
-	def compile(self, exp):
+	def compile_main(self, exp):
 		print("""
 		.file	"bootstrap.py"
 		.text
@@ -75,15 +95,20 @@ main:
 	leal	-4(%ecx), %esp
 	ret
 		""")
+		self.output_functions()
 		self.output_constants()
+	
+	def compile(self, exp):
+		global DO_BEFORE
+		global DO_AFTER
+		self.compile_main(['do', DO_BEFORE, exp, DO_AFTER])
 
-"""
-prog = ['do',
-	['printf', 'Hello'],
-	['printf', ' '],
-	['printf', 'World']
+DO_BEFORE = ['do', 
+	['defun', 'hello_world', [], ['puts', "Hello World"]]
 ]
-"""
-prog = ['printf',"'hello world' takes %ld bytes", ['strlen', "hello world"]]
+DO_AFTER = []
+
+prog = ['hello_world']
+
 compiler = Compiler()
 compiler.compile(prog)
