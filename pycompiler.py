@@ -53,8 +53,6 @@ class Compiler:
 				
 		call = str(exp[0])
 		stack_adjustment = self.PTR_SIZE + int(round((len(exp) - 1 + 0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
-		#args = map(self.get_arg, exp[1:])
-		#stack_adjustment = self.PTR_SIZE + int(round((len(args)+0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE))) * (4 * self.PTR_SIZE)
 		if exp[0] != 'do':
 			print("\tsubl\t$" + str(stack_adjustment) + ", %esp")
 		count = 0
