@@ -33,8 +33,8 @@ class Compiler:
 			print("\tpushl\t%ebp")
 			print("\tmovl\t%esp, %ebp")
 			self.compile_exp(data[1])
-			print("leave")
-			print("ret")
+			print("\tleave")
+			print("\tret")
 			print("\t.size\t" + str(name) + ", .-" + str(name))
 
 	def output_constants(self):
