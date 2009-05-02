@@ -1,5 +1,7 @@
 def is_list(l):
 	return type(l) == type([])
+def is_int(n):
+	return type(n) == type(1)
 
 class Compiler:
 	
@@ -12,6 +14,8 @@ class Compiler:
 		self.PTR_SIZE = 4
 
 	def get_arg(self, a):
+		if is_int(a):
+			return ['int', a]
 		if is_list(a):
 			self.compile_exp(a)
 			return ['subexpr', False]
@@ -63,8 +67,11 @@ class Compiler:
 			if exp[0] != 'do':
 				if atype == 'strconst':
 					param = "$.LC" + str(aparam)
+				elif atype == 'int':
+					param = "$" + str(aparam)
 				else:
 					param = "%eax"
+				
 			if count > 0:
 				i = count * self.PTR_SIZE
 			else:
@@ -106,7 +113,10 @@ DO_BEFORE = ['do',
 ]
 DO_AFTER = []
 
-prog = ['hello_world']
+prog = ['do',
+	['printf', "'hello world' takes %ld bytes\\n", ['strlen', "hello world"]],
+	['printf', "The above should show _%ld_ bytes\\n",11]
+]
 
 compiler = Compiler(DO_BEFORE, DO_AFTER)
 compiler.compile(prog)
