@@ -181,6 +181,5 @@ prog = ['do',
 	['myputs', "TESTING MYPUTS"],
 ]
 
-
 compiler = Compiler(DO_BEFORE, DO_AFTER)
 compiler.compile(prog)

@@ -1,4 +1,7 @@
-prog = ['do',
+"""
+Example of using if statement.
+"""
+prog_example1 = ['do',
 	['if', ['strlen',""],
 		['puts', "IF: The string was not empty"],
 		['puts', "ELSE: The string was empty"]
@@ -8,10 +11,17 @@ prog = ['do',
 		['puts', "Second IF: The string was empty"]
 	]
 ]
-prog = ['do',
+"""
+Example of a lambda.
+"""
+prog_example2 = ['do',
 	['call', ['lambda', [], ["printf", "%ld", ["strlen", "Test"]]], [] ]
 ]
-prog = ['defun', 'while', ['cond', 'body'],
+
+"""
+Example of function definition.
+"""
+prog_example3 = ['defun', 'while', ['cond', 'body'],
 			['if', ['apply', 'cond', []], 
 				['do', 
 					['apply', 'bod', []],
@@ -20,3 +30,10 @@ prog = ['defun', 'while', ['cond', 'body'],
 				[]
 			]
 		]
+"""
+Example of function definition with argument passing.
+"""
+prog_example4 = ['do', 
+	['defun', 'myputs', ['foo'], ['puts', 'foo']],
+	['myputs', "TESTING MYPUTS"],
+]
