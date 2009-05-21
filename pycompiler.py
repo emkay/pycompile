@@ -1,10 +1,29 @@
 SYMBOLS = ['do', 'defun', 'puts', 'printf', 'strlen']
+FUNCTIONS = {}
 def is_list(l):
 	return type(l) == type([])
 def is_int(n):
 	return type(n) == type(1)
 def is_atom(a):
-	return a in SYMBOLS
+	return a in SYMBOLS or a in FUNCTIONS.keys()
+
+class Function:
+	def __init__(self, args, body):
+		self.args = args
+		self.body = body
+
+class Scope:
+	def __init__(self, compiler, func):
+		self.c = compiler
+		self.func = func
+	
+	def get_arg(self, a):
+		count = 0
+		for arg in self.func.args:
+			if arg == a:
+				return ['arg', count]
+			count += 1
+		return ['atom', a]
 
 class Compiler:
 	
@@ -12,13 +31,12 @@ class Compiler:
 		self.DO_BEFORE = before
 		self.DO_AFTER = after
 		self.string_constants = {}
-		self.global_functions = {}
 		self.seq = 0
 		self.PTR_SIZE = 4
 
-	def get_arg(self, a):
+	def get_arg(self, a, scope=False):
 		if is_atom(a):
-			return ['atom', a]
+			return scope.get_arg(a)
 		if is_int(a):
 			return ['int', a]
 		if is_list(a):
@@ -32,7 +50,8 @@ class Compiler:
 		return ['strconst', seq]
 	
 	def defun(self, name, args, body):
-		self.global_functions[name] = [args, body]
+		FUNCTIONS[name] = Function(args, body)
+		return ['subexpr']
 	
 	def ifelse(self, cond, if_branch, else_branch):
 		self.compile_exp(cond)
@@ -49,13 +68,13 @@ class Compiler:
 
 
 	def output_functions(self):
-		for name, data in self.global_functions.items():
+		for name, func in FUNCTIONS.items():
 			print(".globl " + str(name))
 			print("\t.type\t" + str(name) + ", @function")
 			print(str(name) + ":")
 			print("\tpushl\t%ebp")
 			print("\tmovl\t%esp, %ebp")
-			self.compile_exp(data[1])
+			self.compile_exp(func.body, Scope(self, func))
 			print("\tleave")
 			print("\tret")
 			print("\t.size\t" + str(name) + ", .-" + str(name))
@@ -73,29 +92,33 @@ class Compiler:
 		print("\tmovl\t$" + str(name) + ",%eax")
 		return ['subexpr']
 	
-	def compile_eval_arg(self, arg):
-		atype, aparam = self.get_arg(arg)
+	def compile_eval_arg(self, arg, scope=False):
+		atype, aparam = self.get_arg(arg, scope)
 		if atype == 'strconst':
 			return "$.LC" + str(aparam)
 		if atype == 'int':
 			return "$" + str(aparam)
 		if atype == 'atom':
 			return str(aparam)
+		if atype == 'arg':
+			return "\tmovl\t" + str(self.PTR_SIZE * (aparam + 2)) + "(%ebp),%eax"
 		return "%eax"
 	
 	def compile_call(self, func, args):
+		function = Function(args, func)
 		stack_adjustment = self.PTR_SIZE + int(round(((len(args) + 0.5) * self.PTR_SIZE / (4.0 * self.PTR_SIZE)))) * (4 * self.PTR_SIZE)
 		print("\tsubl\t$" + str(stack_adjustment) + ", %esp")
 		count = 0
+		scope = Scope(self, function)
 		for a in args:
-			param = self.compile_eval_arg(a)
+			param = self.compile_eval_arg(a, scope)
 			if count > 0:
 				i = count * 4
 			else:
 				i = ""
 			print("\tmovl\t" + str(param)  + "," + str(i) + "(%esp)")
 			count += 1
-		res = self.compile_eval_arg(func)
+		res = self.compile_eval_arg(func, scope)
 		if res == "%eax":
 			res = "*%eax"
 		print("\tcall\t" + str(res))
@@ -106,7 +129,7 @@ class Compiler:
 		map(self.compile_exp, exp)
 		return ['subexpr']
 
-	def compile_exp(self, exp):
+	def compile_exp(self, exp, scope=False):
 		if not exp or len(exp) == 0:
 			return False
 		if exp[0] == 'do':
@@ -136,7 +159,8 @@ main:
 	movl	%esp, %ebp
 	pushl	%ecx
 		""")
-		self.compile_exp(exp)
+		main = Function([], [])
+		self.compile_exp(exp, Scope(self,main))
 		print("""
 	popl	%ecx
 	popl	%ebp
@@ -152,21 +176,11 @@ main:
 DO_BEFORE = []
 DO_AFTER = []
 
-"""
-prog = ['do',
-	['if', ['strlen',""],
-		['puts', "IF: The string was not empty"],
-		['puts', "ELSE: The string was empty"]
-	],
-	['if', ['strlen',"Test"],
-		['puts', "Second IF: The string was not empty"],
-		['puts', "Second IF: The string was empty"]
-	]
+prog = ['do', 
+	['defun', 'myputs', ['foo'], ['puts', 'foo']],
+	['myputs', "TESTING MYPUTS"],
 ]
-"""
-prog = ['do',
-	['call', ['lambda', [], ["puts", "Test"]], [] ]
-]
+
 
 compiler = Compiler(DO_BEFORE, DO_AFTER)
 compiler.compile(prog)
